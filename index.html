@@ -52,7 +52,8 @@
             box-shadow: 0 0 18px rgba(139,71,137,0.7); /* Mor neon efekti */
             transform-origin: bottom center;
             height: 0; /* Başlangıçta yok */
-            animation: growStem 3s ease-out forwards;
+            /* Delay can be set per-stem via --delay inline style */
+            animation: growStem 3s ease-out var(--delay, 0s) forwards;
         }
 
         /* Farklı saplar oluşturarak buket havası verelim */
@@ -73,7 +74,42 @@
         }
 
     /* Çiçek Animasyonları: Her .flower-head'e animasyon uygulanacak; gecikmeler inline stil ile kontrol ediliyor. */
-    .stem .flower-head { animation: bloom 2.4s cubic-bezier(.2,.9,.2,1) 3.2s forwards; }
+    /* Flower heads use the same --delay as their parent stem so they grow together */
+    .stem .flower-head { animation: bloom 3s cubic-bezier(.2,.9,.2,1) var(--delay, 0s) forwards; }
+
+        /* Düşen yapraklar (flower-scene içinde olacak) */
+        .falling-leaf {
+            position: absolute;
+            /* Konum: çiçeğin içinden başlasın */
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            width: 18px;
+            height: 10px;
+            background: linear-gradient(120deg,#ffb7d9,#ff8fb3);
+            border-radius: 8px 8px 4px 4px;
+            transform-origin: center;
+            filter: drop-shadow(0 8px 14px rgba(0,0,0,0.45));
+            /* animation uses CSS var --dur for duration and --x for horizontal drift */
+            animation: fallLeaf var(--dur, 6s) linear 1 forwards;
+            /* Başlangıçta yapraklar beklemede olacak; JS ile aktif hale getirilecek */
+            animation-play-state: paused;
+            opacity: 0; /* görünür değilken yer kaplamasın */
+            z-index: 6;
+            pointer-events: none;
+        }
+
+        @keyframes fallLeaf {
+            0% { transform: translateX(-50%) translateY(0) rotate(0deg) scale(1); opacity: 1 }
+            40% { transform: translateX(calc(-50% + var(--x, 6vw))) translateY(28vh) rotate(24deg) scale(0.98); opacity: 0.95 }
+            70% { transform: translateX(calc(-50% + calc(var(--x, 6vw) * -1))) translateY(56vh) rotate(-18deg) scale(0.96); opacity: 0.9 }
+            100% { transform: translateX(calc(-50% + var(--x, 6vw))) translateY(110vh) rotate(60deg) scale(0.9); opacity: 0.0 }
+        }
+
+        .falling-leaf.active {
+            animation-play-state: running !important;
+            opacity: 0.95 !important;
+        }
 
         /* Lilyum Yaprakları (Petals) - daha açık lila ve daha güçlü glow */
         .petal {
@@ -82,14 +118,62 @@
             left: 50%;
             width: 46px;
             height: 90px;
-            /* Daha lilyum/pembe tonlar: merkezden dışa doğru soft pembe -> lila -> mor */
-            background: radial-gradient(circle at 40% 28%, #fff6fb 0%, #ffd9ef 18%, #ff9adf 40%, #e07ac9 68%, #62307a 100%);
+            /* Lilyum benzeri pembe tonlar: beyaz kenar, canlı pembe merkez ve hafif leke efekti */
+            background:
+                /* hafif leke (orta bölge) */
+                radial-gradient(circle at 52% 36%, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0) 18%),
+                /* ana renk geçişi */
+                radial-gradient(circle at 50% 30%, #fff 0%, #ffe9f4 8%, #ffb6d6 25%, #ff6aa6 55%, #d83a7a 78%, #7a1548 100%);
             border-radius: 50% 50% 20% 20% / 60% 60% 20% 20%;
-            box-shadow: 0 0 48px rgba(255,150,210,0.85), inset 0 -12px 28px rgba(255,255,255,0.22);
+            box-shadow: 0 0 48px rgba(255,120,200,0.75), inset 0 -12px 28px rgba(255,255,255,0.22);
             transform-origin: bottom center;
             opacity: 1;
+            z-index: 3;
             filter: drop-shadow(0 8px 30px rgba(140,80,200,0.7));
             transition: transform 220ms ease;
+        }
+
+        /* Petal kenarlarını beyazlatmak için pseudo-element: ince, hafif blur'lu bir rim */
+        .petal::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%) translateY(6px);
+            width: calc(100% + 12px);
+            height: calc(100% + 12px);
+            border-radius: inherit;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.65) 12%, rgba(255,255,255,0) 28%);
+            filter: blur(4px);
+            opacity: 0.85;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Stamen (erkek organ) - çiçeklerin ortasında yer alan tozluklar */
+        .stamen {
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            width: 4px;
+            height: 46px;
+            transform-origin: bottom center;
+            background: linear-gradient(180deg, #ffd88a, #ff8a00);
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.35), inset 0 -6px 6px rgba(255,240,200,0.35);
+            z-index: 12;
+        }
+
+        .stamen .anther {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle at 40% 30%, #ffd88a 0%, #c85a00 60%);
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(200,80,10,0.6);
         }
 
         /* Lilyumun 5 yapraklı, daha dolgun yapısı */
@@ -310,77 +394,102 @@
     <div id="container">
         <div id="flower-scene" class="flower-wrapper">
             <!-- Daha yoğun buket: 7 sap, farklı boyutlar -->
-            <div class="stem" style="left:24%; transform: rotate(-18deg);" >
-                <div class="flower-head" style="animation-delay:3.2s;">
+            <div class="stem" style="left:24%; transform: rotate(-18deg); --delay:0.3s;" >
+                <div class="flower-head">
                     <div class="petal one"></div>
                     <div class="petal two"></div>
                     <div class="petal three"></div>
                     <div class="petal four"></div>
                     <div class="petal five"></div>
                     <div class="core"></div>
+                    <!-- Yaprak: çiçekten düşecek (başlangıçta paused/invisible). JS ile aktif edilecek. -->
+                        <div class="falling-leaf" style="--x:-8vw; --dur:6.8s;"></div>
+                        <!-- Stamen set -->
+                        <div class="stamen" style="transform: rotate(-10deg);"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(6deg); left:52%;"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(20deg); left:49%;"><div class="anther"></div></div>
                 </div>
             </div>
 
-            <div class="stem" style="left:34%; transform: rotate(-8deg);">
-                <div class="flower-head" style="animation-delay:3.5s;">
+            <div class="stem" style="left:34%; transform: rotate(-8deg); --delay:0.6s;">
+                <div class="flower-head">
                     <div class="petal one"></div>
                     <div class="petal two"></div>
                     <div class="petal three"></div>
                     <div class="petal four"></div>
                     <div class="petal five"></div>
                     <div class="core"></div>
+                        <div class="falling-leaf" style="--x:-5vw; --dur:7.2s;"></div>
+                        <div class="stamen" style="transform: rotate(-8deg);"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(8deg); left:52%;"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(18deg); left:49%;"><div class="anther"></div></div>
                 </div>
             </div>
 
-            <div class="stem" style="left:44%; transform: rotate(-3deg);">
-                <div class="flower-head" style="animation-delay:3.8s;">
+            <div class="stem" style="left:44%; transform: rotate(-3deg); --delay:0.9s;">
+                <div class="flower-head">
                     <div class="petal one"></div>
                     <div class="petal two"></div>
                     <div class="petal three"></div>
                     <div class="petal four"></div>
                     <div class="petal five"></div>
                     <div class="core"></div>
+                        <div class="falling-leaf" style="--x:4vw; --dur:6.4s;"></div>
+                        <div class="stamen" style="transform: rotate(-6deg);"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(4deg); left:52%;"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(14deg); left:49%;"><div class="anther"></div></div>
                 </div>
             </div>
 
-            <div class="stem" style="left:53%; transform: rotate(3deg);">
-                <div class="flower-head" style="animation-delay:4s;">
+            <div class="stem" style="left:53%; transform: rotate(3deg); --delay:1.2s;">
+                <div class="flower-head">
                     <div class="petal one"></div>
                     <div class="petal two"></div>
                     <div class="petal three"></div>
                     <div class="petal four"></div>
                     <div class="petal five"></div>
                     <div class="core"></div>
+                        <div class="falling-leaf" style="--x:6vw; --dur:7.6s;"></div>
+                        <div class="stamen" style="transform: rotate(-4deg);"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(10deg); left:52%;"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(24deg); left:49%;"><div class="anther"></div></div>
                 </div>
             </div>
 
-            <div class="stem" style="left:63%; transform: rotate(12deg);">
-                <div class="flower-head" style="animation-delay:4.2s;">
+            <div class="stem" style="left:63%; transform: rotate(12deg); --delay:1.5s;">
+                <div class="flower-head">
                     <div class="petal one"></div>
                     <div class="petal two"></div>
                     <div class="petal three"></div>
                     <div class="petal four"></div>
                     <div class="petal five"></div>
                     <div class="core"></div>
+                    <div class="falling-leaf" style="--x:8vw; --dur:6.9s;"></div>
                 </div>
             </div>
 
             <!-- İki küçük tomurcuk -->
-            <div class="stem" style="left:47%; transform: rotate(-12deg);">
-                <div class="flower-head" style="animation-delay:4.4s;">
+            <div class="stem" style="left:47%; transform: rotate(-12deg); --delay:1.8s;">
+                <div class="flower-head">
                     <div class="petal one"></div>
                     <div class="petal two"></div>
                     <div class="petal three"></div>
                     <div class="core"></div>
+                        <div class="falling-leaf" style="--x:-6vw; --dur:6.4s;"></div>
+                        <div class="stamen" style="transform: rotate(-6deg);"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(6deg); left:52%;"><div class="anther"></div></div>
                 </div>
             </div>
 
-            <div class="stem" style="left:58%; transform: rotate(18deg);">
-                <div class="flower-head" style="animation-delay:4.6s;">
+            <div class="stem" style="left:58%; transform: rotate(18deg); --delay:2.1s;">
+                <div class="flower-head">
                     <div class="petal one"></div>
                     <div class="petal two"></div>
                     <div class="petal three"></div>
                     <div class="core"></div>
+                        <div class="falling-leaf" style="--x:6vw; --dur:7.0s;"></div>
+                        <div class="stamen" style="transform: rotate(-8deg);"><div class="anther"></div></div>
+                        <div class="stamen" style="transform: rotate(8deg); left:52%;"><div class="anther"></div></div>
                 </div>
             </div>
 
@@ -442,7 +551,8 @@
                 flowerScene.classList.add('fade-out');
                 // Çiçek kararırken ve hemen sonrasında partikülleri kaldır
                 setTimeout(() => {
-                    document.querySelectorAll('.sparkle').forEach(s => s.remove());
+                    // Partiküller ve düşen yaprakları temizle
+                    document.querySelectorAll('.sparkle, .falling-leaf').forEach(s => s.remove());
                 }, 250);
             }, 8000);
 
@@ -464,6 +574,9 @@
             // overlay kapat
             startOverlay.style.display = 'none';
 
+            // overlay kapandıktan sonra partikülleri göster
+            document.querySelectorAll('.sparkle').forEach(s => s.style.visibility = 'visible');
+
             // kullanıcı etkileşimi olduğu için müziği sesli oynatmayı deneyebiliriz
             if (bgMusic) {
                 try {
@@ -479,12 +592,48 @@
             flowerScene.classList.remove('paused');
 
             // Başlat zaman çizelgesini çalıştır
-            startTimeline();
+                startTimeline();
+
+                // Yaprakları, çiçeğin kendisinden düşüyor gibi göstermek için
+                // her bir stem'in --delay değerini kullanarak bloom sırasında kademeli olarak aktif edeceğiz.
+                (function scheduleLeavesFromFlowers() {
+                    const stems = Array.from(document.querySelectorAll('.stem'));
+                    const bloomDuration = 3.0; // bloom animasyonu süresi (saniye)
+
+                    stems.forEach(stem => {
+                        // parse --delay
+                        const cs = getComputedStyle(stem).getPropertyValue('--delay') || '';
+                        let stemDelay = 0;
+                        if (cs.includes('ms')) stemDelay = parseFloat(cs) / 1000;
+                        else if (cs.includes('s')) stemDelay = parseFloat(cs) || 0;
+
+                        const head = stem.querySelector('.flower-head');
+                        if (!head) return;
+                        const leaves = Array.from(head.querySelectorAll('.falling-leaf'));
+
+                        leaves.forEach((leaf, idx) => {
+                            // schedule leaf to start falling partway through bloom, with jitter
+                            const frac = 0.2 + Math.random() * 0.6; // 0.2..0.8 of bloom
+                            const jitter = (Math.random() - 0.5) * 0.5; // +/- up to 0.25s
+                            const whenMs = Math.round((stemDelay + bloomDuration * frac + jitter) * 1000);
+
+                            // set random horizontal drift and duration if not provided
+                            if (!leaf.style.getPropertyValue('--x')) leaf.style.setProperty('--x', (Math.random() * 20 - 10) + 'vw');
+                            if (!leaf.style.getPropertyValue('--dur')) leaf.style.setProperty('--dur', (5 + Math.random() * 3) + 's');
+
+                            setTimeout(() => {
+                                leaf.classList.add('active');
+                            }, whenMs);
+                        });
+                    });
+                })();
         });
 
         // Sayfa yüklendiğinde flower-scene'in zaten 'paused' olması gerekir; biz yinede garanti için ekleyelim
         document.addEventListener('DOMContentLoaded', () => {
             if (!flowerScene.classList.contains('paused')) flowerScene.classList.add('paused');
+            // Overlay görünürken partiküllerin gözükmemesi için başlangıçta gizle
+            document.querySelectorAll('.sparkle').forEach(s => s.style.visibility = 'hidden');
         });
     </script>
 </body>
